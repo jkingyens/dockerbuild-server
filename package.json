@@ -1,0 +1,26 @@
+{
+  "name": "build-server",
+  "version": "0.1.0",
+  "description": "Accept build job and publish to Docker index",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/jkingyens/build-server.git"
+  },
+  "keywords": [
+    "docker"
+  ],
+  "author": "jeff.kingyens@gmail.com",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jkingyens/build-server/issues"
+  },
+  "homepage": "https://github.com/jkingyens/build-server",
+  "dependencies": {
+    "dockerode": "jkingyens/dockerode"
+  }
+}
