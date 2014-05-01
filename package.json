@@ -1,6 +1,6 @@
 {
   "name": "build-server",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Accept build job and publish to Docker index",
   "main": "index.js",
   "scripts": {
