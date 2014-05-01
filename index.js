@@ -1,9 +1,11 @@
 var dockerode = require('dockerode');
 var fs = require('fs');
 var http = require('http');
+var path = require('path');
 var url = require('url');
 
-var config_data = fs.readFileSync(getUserHome() + '/.dockercfg', 'utf8');
+var home = process.env[(process.platform == 'win32') ? 'USERPROFILE' : 'HOME'];
+var config_data = fs.readFileSync(path.normalize(home + '/.dockercfg', 'utf8'));
 
 var auth_config = new Buffer(JSON.stringify({
   username: process.env.DOCKER_USERNAME,
@@ -12,18 +14,14 @@ var auth_config = new Buffer(JSON.stringify({
   serveraddress: 'https://index.docker.io/v1/'
 })).toString('base64');
 
-function getUserHome() {
-  return process.env[(process.platform == 'win32') ? 'USERPROFILE' : 'HOME'];
-}
-
 var config_file = new Buffer(config_data).toString('base64');
 
-fs.exists('/var/run/docker.sock', function (exists) {
+fs.exists('/run/docker.sock', function (exists) {
 
   var docker;
 
   if (exists) {
-    docker = new dockerode({socketPath: '/var/run/docker.sock'});
+    docker = new dockerode({socketPath: '/run/docker.sock'});
   } else {
     if (process.env.DOCKER_HOST) {
       var parsed_url = url.parse(process.env.DOCKER_HOST);
@@ -37,13 +35,14 @@ fs.exists('/var/run/docker.sock', function (exists) {
   }
 
   var server = http.createServer(function (req, res) {
+  server.timeout = 0;
 
     if (process.env.AUTH_TOKEN) {
-      if (!req.headers['Authorization']) {
+      if (!req.headers['authorization']) {
         res.statusCode = 401;
         return res.end();
       }
-      if (req.headers['Authorization'] !== 'Bearer ' + process.env.AUTH_TOKEN) {
+      if (req.headers['authorization'] !== 'Bearer ' + process.env.AUTH_TOKEN) {
         res.statusCode = 401;
         return res.end();
       }
@@ -62,11 +61,14 @@ fs.exists('/var/run/docker.sock', function (exists) {
         res.writeHead(500, 'Docker build error', {
           'Content-Type': 'application/json'
         });
-        res.write(JSON.stringify(err));
+        res.write(JSON.stringify({
+          message: 'Error connecting to Docker'
+        }));
         return res.end();
       }
       build_stream.on('data', function (data) {
         // print some progress?
+        // console.log(data.toString());
       });
       build_stream.on('end', function () {
         // get the image id from a build
@@ -76,11 +78,14 @@ fs.exists('/var/run/docker.sock', function (exists) {
             res.writeHead(500, 'Docker push error', {
               'Content-Type': 'application/json'
             });
-            res.write(JSON.stringify(err));
+            res.write(JSON.stringify({
+              message: 'Error connecting to Docker'
+            }));
             return res.end();
           }
           push_stream.on('data', function (data) {
             // print some progress?
+            // console.log(data.toString());
           });
           push_stream.on('end', function () {
             res.writeHead(201, {

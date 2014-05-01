@@ -1,16 +1,28 @@
 Usage
 #####
 
-Run as a typical docker container
+Example systemd unit file:
 
-    docker run -d -p 8080 --name build-server -e AUTH_TOKEN=my_secret -v /var/run/docker.sock:/docker.sock /jkingyens/build-server
+    [Unit]
+    Description=Docker Build
 
-Make this container accessible/visible to your local development machine. On your local machine install the build-client:
+    [Service]
+    ExecStartPre=/usr/bin/docker pull jkingyens/build-server
+    ExecStart=/usr/bin/docker run -e AUTH_TOKEN=secretkey -v /home/core/.dockercfg:/.dockercfg -v /var/run/docker.sock:/run/docker.sock  -e DOCKER_USERNAME=username -e DOCKER_PASSWORD=password -e DOCKER_EMAIL=email --rm --name build --publish-all=true jkingyens/build-server
+    ExecStop=/usr/bin/bash -c "/usr/bin/docker stop build"
 
-    npm install -g build-client
+Run this on your server and make it accessible to the outside world. Then on your development machine run:
 
-Now you can publish docker images from your local machine by executing `publish` from your local directory.
+    npm install -g dockerbuild
 
-    publish
+Add these enviroment variables to your local devleopment machine:
 
-This will return the id of the newly published image.
+  * BUILD_HOST - host of build-server deployment
+  * BUILD_PORT - port of build-server deployment
+  * BUILD_AUTH - the secret key you set in the AUTH_TOKEN server-side environment variable (see above)
+
+Now you can publish docker images from your local machine by executing `publish` from your source code directory.
+
+    publish <username/repo>
+
+This will tar+gzip your build context, taking into consideration your .gitignore file (so node_modules will not transmit, for instance). It will then run a docker build job on the remote server, and push the resulting image to the public docker index, tagging it as username/repo.
